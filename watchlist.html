@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Watchlist — Curated Chaos</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@300;400;500&family=Unbounded:wght@200;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0a0a0a;
+    --cream: #f0ead8;
+    --gold: #c9a84c;
+    --gold-dim: #8a6d2f;
+    --rust: #b5451b;
+    --fog: #1e1e1e;
+    --text-muted: #7a7060;
+    --card-bg: #111008;
+    --border: rgba(201,168,76,0.2);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--ink);
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  .cursor {
+    position: fixed;
+    width: 12px; height: 12px;
+    background: var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.15s ease, opacity 0.2s;
+    mix-blend-mode: difference;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transition: transform 0.4s cubic-bezier(0.23,1,0.32,1), opacity 0.3s;
+    opacity: 0.5;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9997;
+    opacity: 0.6;
+  }
+
+  /* ========== HERO ========== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 4rem 2rem;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 40%, rgba(201,168,76,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(181,69,27,0.04) 0%, transparent 60%);
+  }
+  .hero-lines {
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 79px, rgba(201,168,76,0.04) 80px);
+    pointer-events: none;
+  }
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3.5rem, 10vw, 9rem);
+    font-weight: 900;
+    line-height: 0.9;
+    text-align: center;
+    letter-spacing: -0.02em;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.4s forwards;
+  }
+  .hero-title em { font-style: italic; color: var(--gold); }
+  .hero-title .line2 {
+    display: block;
+    font-weight: 400;
+    font-size: 0.45em;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    font-style: normal;
+  }
+  .hero-desc {
+    max-width: 540px;
+    text-align: center;
+    margin-top: 2.5rem;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    color: var(--text-muted);
+    opacity: 0;
+    animation: fadeUp 0.8s 0.7s forwards;
+  }
+  .hero-desc strong { color: var(--cream); font-weight: 500; }
+  .hero-note {
+    margin-top: 1.5rem;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 0.98rem;
+    color: var(--gold-dim);
+    opacity: 0;
+    animation: fadeUp 0.8s 1s forwards;
+  }
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0;
+    animation: fadeIn 1s 1.5s forwards;
+  }
+  .scroll-hint span {
+    font-size: 0.66rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .scroll-line {
+    width: 1px; height: 50px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: scrollPulse 2s infinite;
+  }
+
+  /* ========== LAYOUT ========== */
+  .section-wrap {
+    padding: 6rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    margin-bottom: 4rem;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .section-header.visible { opacity: 1; transform: none; }
+  .section-number {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 5rem;
+    font-weight: 200;
+    color: rgba(201,168,76,0.12);
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: -0.5rem;
+    user-select: none;
+  }
+  .section-tag {
+    font-size: 0.66rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.4rem;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--cream);
+  }
+  .section-subtitle {
+    margin-top: 0.6rem;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    max-width: 420px;
+  }
+  .section-rule {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0 auto 6rem;
+    max-width: 1160px;
+  }
+
+  /* ========== CARDS ========== */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.3s, box-shadow 0.3s;
+  }
+  .card.visible { opacity: 1; transform: none; }
+  .card:hover {
+    border-color: rgba(201,168,76,0.5);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.1);
+  }
+  /* Only lift when not playing */
+  .card:not(.is-playing):hover { transform: translateY(-4px); }
+
+  .card:nth-child(1) { transition-delay: 0.05s; }
+  .card:nth-child(2) { transition-delay: 0.15s; }
+  .card:nth-child(3) { transition-delay: 0.25s; }
+  .card:nth-child(4) { transition-delay: 0.35s; }
+
+  /* ── Thumbnail container ── */
+  .card-thumb {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    background: #0d0d0a;
+    cursor: pointer;
+  }
+
+  /* Poster image */
+  .card-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease, opacity 0.35s ease;
+  }
+  /* Subtle zoom on hover (non-playing) */
+  .card-thumb:not(.playing):hover img { transform: scale(1.05); }
+
+  /* Embedded YouTube iframe — hidden until .playing */
+  .card-thumb iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    border: none;
+    display: none;
+    z-index: 3;
+  }
+  .card-thumb.playing iframe { display: block; }
+  .card-thumb.playing img,
+  .card-thumb.playing .card-thumb-overlay,
+  .card-thumb.playing .play-btn { opacity: 0; pointer-events: none; }
+
+  .card-thumb-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, var(--card-bg) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.3s;
+  }
+
+  /* Play button */
+  .play-btn {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.25s;
+  }
+  .play-btn:hover .play-circle { transform: scale(1.12); background: var(--rust); }
+  .play-circle {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: rgba(10,10,10,0.75);
+    border: 1.5px solid rgba(201,168,76,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, background 0.2s ease;
+    backdrop-filter: blur(4px);
+  }
+  .play-circle svg { width: 18px; height: 18px; fill: var(--cream); margin-left: 3px; }
+
+  /* Close / stop button — only visible while playing */
+  .stop-btn {
+    position: absolute;
+    top: 0.6rem; left: 0.6rem;
+    z-index: 10;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(10,10,10,0.82);
+    border: 1px solid rgba(201,168,76,0.45);
+    color: var(--cream);
+    font-size: 0.82rem;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.2s;
+    line-height: 1;
+  }
+  .stop-btn:hover { background: rgba(181,69,27,0.85); }
+  .card-thumb.playing .stop-btn { display: flex; }
+
+  .card-badge {
+    position: absolute;
+    top: 0.75rem; right: 0.75rem;
+    z-index: 2;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: rgba(10,10,10,0.85);
+    border: 1px solid var(--border);
+    color: var(--gold);
+    padding: 0.3rem 0.6rem;
+    backdrop-filter: blur(4px);
+    transition: opacity 0.3s;
+  }
+  .card-thumb.playing .card-badge { opacity: 0; }
+
+  /* Small loading bar for 30s preview */
+  .preview-loading {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    z-index: 11;
+    background: rgba(10,10,10,0.4);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .card-thumb.playing .preview-loading { opacity: 1; }
+  .preview-loading-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    box-shadow: 0 0 8px rgba(201,168,76,0.65);
+  }
+
+  /* ── Card body ── */
+  .card-body { padding: 1.25rem 1.5rem 1.5rem; }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 0.4rem;
+    line-height: 1.2;
+  }
+  .card-title .emoji {
+    display: inline-block;
+    animation: wiggle 2s infinite;
+    transform-origin: bottom center;
+  }
+  .card-type {
+    font-size: 0.68rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 0.8rem;
+  }
+  .card-vibe {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-style: italic;
+    margin-bottom: 1.2rem;
+    min-height: 2.5rem;
+  }
+  .card-links { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    cursor: pointer;
+    background: none;
+  }
+  .btn-gold { color: var(--gold); border-color: rgba(201,168,76,0.4); background: rgba(201,168,76,0.05); }
+  .btn-gold:hover { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+  .btn-rust { color: #e06040; border-color: rgba(181,69,27,0.4); background: rgba(181,69,27,0.05); }
+  .btn-rust:hover { background: var(--rust); color: var(--cream); border-color: var(--rust); }
+  .btn svg { width: 10px; height: 10px; fill: currentColor; }
+
+  /* ========== FOOTER ========== */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+  .footer-quote {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--gold-dim);
+    max-width: 500px;
+    margin: 0 auto 1rem;
+    line-height: 1.6;
+  }
+  .footer-sub {
+    font-size: 0.66rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ========== MODAL LIGHTBOX ========== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: rgba(5,4,2,0.92);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+    backdrop-filter: blur(6px);
+  }
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal-inner {
+    position: relative;
+    width: 100%;
+    max-width: 860px;
+    transform: scale(0.93) translateY(24px);
+    transition: transform 0.38s cubic-bezier(0.22,1,0.36,1);
+  }
+  .modal-overlay.open .modal-inner {
+    transform: scale(1) translateY(0);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+  }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1.2;
+  }
+  .modal-type {
+    font-size: 0.66rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-top: 0.25rem;
+  }
+  .modal-close {
+    flex-shrink: 0;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.4);
+    background: rgba(10,10,10,0.8);
+    color: var(--cream);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .modal-close:hover {
+    background: var(--rust);
+    border-color: var(--rust);
+  }
+
+  .modal-video {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .modal-video iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .modal-hint {
+    font-size: 0.66rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ========== ANIMATIONS ========== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 1; transform: scaleY(1); }
+    50%       { opacity: 0.3; transform: scaleY(0.6); }
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    15%       { transform: rotate(12deg); }
+    30%       { transform: rotate(-8deg); }
+    45%       { transform: rotate(6deg); }
+    60%       { transform: none; }
+  }
+
+  @media (max-width: 600px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    .section-number { font-size: 3rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-lines"></div>
+  <p class="eyebrow">A Curated Dissociation Menu</p>
+  <h1 class="hero-title">
+    <em>The</em> Watchlist
+    <span class="line2">Carefully & Deliberately Assembled</span>
+  </h1>
+  <p class="hero-desc">
+    No algorithm. No Netflix trending. Just <strong>nine things</strong> that will quietly rearrange the furniture in your brain and leave without cleaning up. You're welcome.
+    <br><br>
+    <strong>N.B.</strong> — "The movies gonna serve you a lot better than the shows" 🌚
+  </p>
+  <p class="hero-note">"Didn't want the list to stretch a bunch. So I made it carefully and deliberately 😌"</p>
+  <div class="scroll-hint">
+    <span>Scroll to begin suffering</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- SECTION 1: SHOWS -->
+<div class="section-wrap">
+  <div class="section-header" data-reveal>
+    <div class="section-number">01</div>
+    <div class="section-meta">
+      <p class="section-tag">For Long Seasons & Times When Procrastination Didn't Hit Yet</p>
+      <h2 class="section-title">Psychological Shows<br><em style="font-style:italic;color:var(--gold)">3 Seasons Max. We're responsible here.</em></h2>
+      <p class="section-subtitle">These will consume your evenings, haunt your mornings, and make you stare at the ceiling at 2am questioning your entire sense of reality. Standard stuff.</p>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+
+    <!-- Severance -->
+    <div class="card" data-reveal>
+      <div class="card-thumb" data-vid="evH8D6wz4Qg" data-preview-vid="dTqlZkvbNVg">
+        <img src="https://i.ytimg.com/vi/dTqlZkvbNVg/hqdefault.jpg" alt="Severance" loading="lazy">
+        <div class="card-thumb-overlay"></div>
+        <div class="play-btn" role="button" aria-label="Play Severance trailer">
+          <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <button class="stop-btn" aria-label="Stop video">✕</button>
+        <div class="card-badge">TV · 2022</div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">Severance</h3>
+        <p class="card-type">Psychological Thriller · Apple TV+</p>
+        <p class="card-vibe">What if your work self and home self literally didn't know each other existed? Corporate horror at its most elegant — and somehow also funny???</p>
+        <div class="card-links">
+          <a href="https://www.imdb.com/title/tt11280740/" target="_blank" class="btn btn-gold">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            IMDb
+          </a>
+          <button class="btn btn-rust trailer-btn" data-vid="xEQP4VVuyrY">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Trailer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mindhunter -->
+    <div class="card" data-reveal>
+      <div class="card-thumb" data-vid="oFlKiTwhd38" data-preview-vid="LR3G1lWbnUU">
+        <img src="https://i.ytimg.com/vi/LR3G1lWbnUU/hqdefault.jpg" alt="Mindhunter" loading="lazy">
+        <div class="card-thumb-overlay"></div>
+        <div class="play-btn" role="button" aria-label="Play Mindhunter trailer">
+          <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <button class="stop-btn" aria-label="Stop video">✕</button>
+        <div class="card-badge">TV · 2017</div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">Mindhunter</h3>
+        <p class="card-type">Crime Drama · Netflix</p>
+        <p class="card-vibe">The FBI agents who invented criminal profiling by sitting across from serial killers and asking "so... why tho?" Fincher produced. You can tell.</p>
+        <div class="card-links">
+          <a href="https://www.imdb.com/title/tt5290382/" target="_blank" class="btn btn-gold">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            IMDb
+          </a>
+          <button class="btn btn-rust trailer-btn" data-vid="oFlKiTwhd38">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Trailer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- The Leftovers -->
+    <div class="card" data-reveal>
+      <div class="card-thumb" data-vid="FLT3YUALJno" data-preview-vid="FLT3YUALJno" data-embed="https://www.dailymotion.com/embed/video/x72cl0z?autoplay=1&mute=1&controls=0">
+        <img src="https://i.ytimg.com/vi/FLT3YUALJno/hqdefault.jpg" alt="The Leftovers" loading="lazy">
+        <div class="card-thumb-overlay"></div>
+        <div class="play-btn" role="button" aria-label="Play The Leftovers trailer">
+          <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <button class="stop-btn" aria-label="Stop video">✕</button>
+        <div class="card-badge">TV · 2014</div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">The Leftovers</h3>
+        <p class="card-type">Drama · HBO</p>
+        <p class="card-vibe">2% of humanity vanished. No reason given. Now everyone just... has to deal with it. The most emotionally annihilating show ever made. Hug someone after.</p>
+        <div class="card-links">
+          <a href="https://www.imdb.com/title/tt2699128/" target="_blank" class="btn btn-gold">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            IMDb
+          </a>
+          <button class="btn btn-rust trailer-btn" data-vid="FLT3YUALJno">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Trailer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- True Detective -->
+    <div class="card" data-reveal>
+      <div class="card-thumb" data-vid="fVQUcaO4AvE" data-preview-vid="fVQUcaO4AvE">
+        <img src="https://i.ytimg.com/vi/fVQUcaO4AvE/hqdefault.jpg" alt="True Detective S1" loading="lazy">
+        <div class="card-thumb-overlay"></div>
+        <div class="play-btn" role="button" aria-label="Play True Detective trailer">
+          <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <button class="stop-btn" aria-label="Stop video">✕</button>
+        <div class="card-badge">TV · 2014</div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">True Detective <span style="color:var(--gold);font-size:0.85em">S1</span></h3>
+        <p class="card-type">Crime Drama · HBO</p>
+        <p class="card-vibe">McConaughey delivers a 17-year monologue about nihilism while solving murders in Louisiana. Peak television. Just Season 1. Don't ask about the others.</p>
+        <div class="card-links">
+          <a href="https://www.imdb.com/title/tt2356777/" target="_blank" class="btn btn-gold">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            IMDb
+          </a>
+          <button class="btn btn-rust trailer-btn" data-vid="fVQUcaO4AvE">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Trailer
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<hr class="section-rule">
+
+<!-- SECTION 2: MOVIES -->
+<div class="section-wrap">
+  <div class="section-header" data-reveal>
+    <div class="section-number">02</div>
+    <div class="section-meta">
+      <p class="section-tag">For Fast Treats & Quick Dissociation Sessions</p>
+      <h2 class="section-title">Movies That Will<br><em style="font-style:italic;color:var(--gold)">Leave You Speechless</em></h2>
+      <p class="section-subtitle">You won't know what or how to feel. That's the point. Clear your schedule. These hit different and harder than anything an algorithm would dare recommend.</p>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+
+    <!-- Nightcrawler -->
+    <div class="card" data-reveal>
+      <div class="card-thumb" data-vid="X8kYDQan8bw" data-preview-vid="1lEdwqwOttg" data-preview-start="10">
+        <img src="https://i.ytimg.com/vi/1lEdwqwOttg/hqdefault.jpg" alt="Nightcrawler" loading="lazy">
+        <div class="card-thumb-overlay"></div>
+        <div class="play-btn" role="button" aria-label="Play Nightcrawler trailer">
+          <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <button class="stop-btn" aria-label="Stop video">✕</button>
+        <div class="card-badge">Film · 2014</div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">Nightcrawler</h3>
+        <p class="card-type">Thriller · Dan Gilroy</p>
+        <p class="card-vibe">Jake Gyllenhaal plays a man who reads self-help books then becomes a crime journalist with zero conscience. Terrifying because it's basically LinkedIn.</p>
+        <div class="card-links">
+          <a href="https://letterboxd.com/film/nightcrawler/" target="_blank" class="btn btn-gold">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            Letterboxd
+          </a>
+          <button class="btn btn-rust trailer-btn" data-vid="X8kYDQan8bw" data-start="10">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Trailer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prisoners -->
+    <div class="card" data-reveal>
+      <div class="card-thumb" data-vid="bpXfcTF6iVk" data-preview-vid="2SupordEUpw">
+        <img src="https://i.ytimg.com/vi/2SupordEUpw/hqdefault.jpg" alt="Prisoners" loading="lazy">
+        <div class="card-thumb-overlay"></div>
+        <div class="play-btn" role="button" aria-label="Play Prisoners trailer">
+          <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <button class="stop-btn" aria-label="Stop video">✕</button>
+        <div class="card-badge">Film · 2013</div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">Prisoners</h3>
+        <p class="card-type">Mystery Thriller · Denis Villeneuve</p>
+        <p class="card-vibe">A father goes to increasingly disturbing lengths to find his missing daughter. Roger Deakins' cinematography will make you feel cold even in summer.</p>
+        <div class="card-links">
+          <a href="https://letterboxd.com/film/prisoners/" target="_blank" class="btn btn-gold">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            Letterboxd
+          </a>
+          <button class="btn btn-rust trailer-btn" data-vid="bpXfcTF6iVk" data-start="10">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Trailer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enemy -->
+    <div class="card" data-reveal>
+      <div class="card-thumb" data-vid="FJuaAWrgoUY" data-preview-vid="aVvgt3jIUsc" data-preview-start="42">
+        <img src="https://i.ytimg.com/vi/aVvgt3jIUsc/hqdefault.jpg" alt="Enemy" loading="lazy">
+        <div class="card-thumb-overlay"></div>
+        <div class="play-btn" role="button" aria-label="Play Enemy trailer">
+          <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <button class="stop-btn" aria-label="Stop video">✕</button>
+        <div class="card-badge">Film · 2013</div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">Enemy</h3>
+        <p class="card-type">Psychological Mystery · Denis Villeneuve</p>
+        <p class="card-vibe">Jake Gyllenhaal finds his exact doppelgänger. Also there are spiders. Why are there spiders. Nobody fully agrees on what it means. That's fine. It's fine.</p>
+        <div class="card-links">
+          <a href="https://letterboxd.com/film/enemy-2013/" target="_blank" class="btn btn-gold">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            Letterboxd
+          </a>
+          <button class="btn btn-rust trailer-btn" data-vid="FJuaAWrgoUY" data-start="10">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Trailer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Country for Old Men -->
+    <div class="card" data-reveal>
+      <div class="card-thumb" data-vid="ZY0DG8rUnCA" data-preview-vid="ZY0DG8rUnCA" data-preview-start="10">
+        <img src="https://i.ytimg.com/vi/ZY0DG8rUnCA/hqdefault.jpg" alt="No Country for Old Men" loading="lazy">
+        <div class="card-thumb-overlay"></div>
+        <div class="play-btn" role="button" aria-label="Play No Country for Old Men trailer">
+          <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <button class="stop-btn" aria-label="Stop video">✕</button>
+        <div class="card-badge">Film · 2007</div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">No Country for Old Men</h3>
+        <p class="card-type">Neo-Western Thriller · Coen Brothers</p>
+        <p class="card-vibe">A man finds a suitcase of money. The worst person alive hunts him for it. Philosophy disguised as a Western. The ending will live in your head forever.</p>
+        <div class="card-links">
+          <a href="https://letterboxd.com/film/no-country-for-old-men/" target="_blank" class="btn btn-gold">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            Letterboxd
+          </a>
+          <button class="btn btn-rust trailer-btn" data-vid="38A__WT3-o0" data-start="10">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Trailer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Oldboy -->
+    <div class="card" data-reveal>
+      <div class="card-thumb" data-vid="gvQ7Z6ZCxTc" data-preview-vid="gvQ7Z6ZCxTc" data-preview-start="28">
+        <img src="https://i.ytimg.com/vi/2HkjrJ6IK5E/hqdefault.jpg" alt="Oldboy" loading="lazy">
+        <div class="card-thumb-overlay"></div>
+        <div class="play-btn" role="button" aria-label="Play Oldboy trailer">
+          <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        </div>
+        <button class="stop-btn" aria-label="Stop video">✕</button>
+        <div class="card-badge">Film · 2003</div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">Oldboy <span class="emoji">😱</span></h3>
+        <p class="card-type">Neo-Noir Thriller · Park Chan-wook</p>
+        <p class="card-vibe">"Oooooh Boy!" — the curator. A man is imprisoned for 15 years with no explanation, then released. Korean cinema at its most devastating. You will not see the ending coming. Nobody does.</p>
+        <div class="card-links">
+          <a href="https://letterboxd.com/film/oldboy/" target="_blank" class="btn btn-gold">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            Letterboxd
+          </a>
+          <button class="btn btn-rust trailer-btn" data-vid="tAaBkFChaRg">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Trailer
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p class="footer-quote">"Hope you like em 😌🙏🏻"</p>
+  <p class="footer-sub">Curated with care · Dissociation guaranteed · No refunds</p>
+</footer>
+
+<!-- MODAL LIGHTBOX -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-label="Trailer player">
+  <div class="modal-inner" id="modalInner">
+    <div class="modal-header">
+      <div>
+        <p class="modal-title" id="modalTitle"></p>
+        <p class="modal-type" id="modalType"></p>
+      </div>
+      <button class="modal-close" id="modalClose" aria-label="Close trailer">✕</button>
+    </div>
+    <div class="modal-video" id="modalVideo"></div>
+    <div class="modal-footer">
+      <span class="modal-hint">Press Esc or click outside to close</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── Custom cursor ── */
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  let mx = -100, my = -100, rx = -100, ry = -100;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.transform = `translate(${mx - 6}px, ${my - 6}px)`;
+  });
+  (function animateRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.transform = `translate(${rx - 18}px, ${ry - 18}px)`;
+    requestAnimationFrame(animateRing);
+  })();
+
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => { cursor.style.transform += ' scale(2)'; ring.style.opacity = '0.2'; });
+    el.addEventListener('mouseleave', () => { cursor.style.transform = cursor.style.transform.replace(' scale(2)', ''); ring.style.opacity = '0.5'; });
+  });
+
+  /* ── Intersection Observer (reveal animations) ── */
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('[data-reveal]').forEach(el => observer.observe(el));
+
+  /* ── Inline card embed (clicking the thumbnail) ── */
+  let currentlyPlaying = null;
+  const PREVIEW_DURATION_MS = 30000;
+  const previewTimers = new WeakMap();
+
+  function buildEmbedUrl(vid, { preview = false, start = 0 } = {}) {
+    // youtube.com embed is more reliable than youtube-nocookie for local file previews.
+    const base = `https://www.youtube.com/embed/${vid}`;
+    const params = new URLSearchParams({
+      autoplay: '1',
+      mute: '1',
+      playsinline: '1',
+      rel: '0',
+      modestbranding: '1'
+    });
+
+    if (preview) {
+      // Keep preview as "pure video" as YouTube allows.
+      params.set('controls', '0');
+      params.set('disablekb', '1');
+      params.set('iv_load_policy', '3');
+      params.set('fs', '0');
+      params.set('cc_load_policy', '0');
+    }
+    if (start && Number.isFinite(start) && start > 0) {
+      params.set('start', String(Math.floor(start)));
+    }
+
+    // YouTube can reject embeds with error 153 when there is no valid origin/referrer.
+    // Include origin when available (http/https), and avoid strict referrer suppression.
+    if (location.protocol.startsWith('http')) {
+      params.set('origin', location.origin);
+    }
+
+    return `${base}?${params.toString()}`;
+  }
+
+  function appendPreviewParams(url) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}controls=0&ui-start-screen-info=false&queue-enable=false`;
+  }
+
+  function resolveEmbedSrc(vid, directEmbed = '', options = {}) {
+    if (directEmbed) {
+      return options.preview ? appendPreviewParams(directEmbed) : directEmbed;
+    }
+    return buildEmbedUrl(vid, options);
+  }
+
+  function clearPreviewTimer(thumb) {
+    const timerId = previewTimers.get(thumb);
+    if (timerId) {
+      clearTimeout(timerId);
+      previewTimers.delete(thumb);
+    }
+  }
+
+  function startPreviewTimer(thumb) {
+    clearPreviewTimer(thumb);
+    const timerId = setTimeout(() => stopCardVideo(thumb), PREVIEW_DURATION_MS);
+    previewTimers.set(thumb, timerId);
+  }
+
+  function ensurePreviewLoadingBar(thumb) {
+    if (thumb.querySelector('.preview-loading')) return;
+    const bar = document.createElement('div');
+    bar.className = 'preview-loading';
+    bar.innerHTML = '<div class="preview-loading-fill"></div>';
+    thumb.appendChild(bar);
+  }
+
+  function resetPreviewLoadingBar(thumb) {
+    const fill = thumb.querySelector('.preview-loading-fill');
+    if (!fill) return;
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    void fill.offsetWidth;
+  }
+
+  function animatePreviewLoadingBar(thumb) {
+    const fill = thumb.querySelector('.preview-loading-fill');
+    if (!fill) return;
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    requestAnimationFrame(() => {
+      fill.style.transition = `width ${PREVIEW_DURATION_MS}ms linear`;
+      fill.style.width = '100%';
+    });
+  }
+
+  function setupThumbnailFallbacks() {
+    const fallbacks = ['hqdefault.jpg', 'mqdefault.jpg', 'sddefault.jpg', 'default.jpg'];
+
+    document.querySelectorAll('.card-thumb').forEach(thumb => {
+      const vid = thumb.dataset.previewVid || thumb.dataset.vid;
+      const img = thumb.querySelector('img');
+      if (!vid || !img) return;
+
+      let fallbackIndex = 0;
+      img.addEventListener('error', () => {
+        if (fallbackIndex >= fallbacks.length) return;
+        img.src = `https://i.ytimg.com/vi/${vid}/${fallbacks[fallbackIndex++]}`;
+      });
+    });
+  }
+
+  function embedInCard(thumb, vid) {
+    if (currentlyPlaying && currentlyPlaying !== thumb) stopCardVideo(currentlyPlaying);
+    ensurePreviewLoadingBar(thumb);
+    if (!thumb.querySelector('iframe')) {
+      const iframe = document.createElement('iframe');
+      const start = Number.parseInt(thumb.dataset.previewStart || '0', 50) || 0;
+      iframe.src = resolveEmbedSrc(vid, thumb.dataset.embed || '', { preview: true, start });
+      iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+      iframe.referrerPolicy = 'origin-when-cross-origin';
+      iframe.allowFullscreen = true;
+      thumb.appendChild(iframe);
+    }
+    thumb.classList.add('playing');
+    thumb.closest('.card').classList.add('is-playing');
+    currentlyPlaying = thumb;
+    startPreviewTimer(thumb);
+    animatePreviewLoadingBar(thumb);
+  }
+
+  function stopCardVideo(thumb) {
+    clearPreviewTimer(thumb);
+    resetPreviewLoadingBar(thumb);
+    const iframe = thumb.querySelector('iframe');
+    if (iframe) { iframe.src = ''; iframe.remove(); }
+    thumb.classList.remove('playing');
+    thumb.closest('.card').classList.remove('is-playing');
+    if (currentlyPlaying === thumb) currentlyPlaying = null;
+  }
+
+  document.querySelectorAll('.card-thumb').forEach(thumb => {
+    ensurePreviewLoadingBar(thumb);
+    thumb.addEventListener('click', e => {
+      if (e.target.closest('.stop-btn') || e.target.closest('a')) return;
+      if (thumb.classList.contains('playing')) return;
+      embedInCard(thumb, thumb.dataset.previewVid || thumb.dataset.vid);
+    });
+  });
+
+  document.querySelectorAll('.stop-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      stopCardVideo(btn.closest('.card-thumb'));
+    });
+  });
+
+  /* ── Modal lightbox (Trailer button) ── */
+  const overlay    = document.getElementById('modalOverlay');
+  const modalVideo = document.getElementById('modalVideo');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalType  = document.getElementById('modalType');
+  const modalClose = document.getElementById('modalClose');
+
+  function openModal(vid, title, type, directEmbed = '', start = 0) {
+    // Stop any inline card video first
+    if (currentlyPlaying) stopCardVideo(currentlyPlaying);
+
+    modalTitle.textContent = title;
+    modalType.textContent  = type;
+    modalVideo.innerHTML = `<iframe
+      src="${resolveEmbedSrc(vid, directEmbed, { start })}"
+      allow="autoplay; encrypted-media; picture-in-picture"
+      referrerpolicy="origin-when-cross-origin"
+      allowfullscreen></iframe>`;
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    // Short delay so the fade-out plays before iframe is killed
+    setTimeout(() => { modalVideo.innerHTML = ''; }, 380);
+  }
+
+  modalClose.addEventListener('click', closeModal);
+
+  // Click on the dark backdrop (not the inner card) closes modal
+  overlay.addEventListener('click', e => {
+    if (!document.getElementById('modalInner').contains(e.target)) closeModal();
+  });
+
+  // Escape key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+  });
+
+  // Wire up all Trailer buttons
+  document.querySelectorAll('.trailer-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card  = btn.closest('.card');
+      const vid   = btn.dataset.vid;
+      const directEmbed = btn.dataset.embed || card.querySelector('.card-thumb')?.dataset.embed || '';
+      const start = Number.parseInt(btn.dataset.start || '0', 10) || 0;
+      const title = card.querySelector('.card-title').textContent.trim();
+      const type  = card.querySelector('.card-type').textContent.trim();
+      openModal(vid, title, type, directEmbed, start);
+    });
+  });
+
+  setupThumbnailFallbacks();
+</script>
+</body>
+</html>
