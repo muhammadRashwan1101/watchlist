@@ -16,12 +16,18 @@
     --text-muted: #7a7060;
     --card-bg: #111008;
     --border: rgba(201,168,76,0.2);
+    --review-bg: #0d0c07;
+    --review-border: rgba(201,168,76,0.12);
+    --review-reply-bg: #131109;
+    --review-reply-border: rgba(201,168,76,0.25);
+    --star-active: #c9a84c;
+    --star-inactive: #2a2618;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
 
-  body {
+   body {
     background: var(--ink);
     color: var(--cream);
     font-family: 'DM Mono', monospace;
@@ -35,7 +41,7 @@
     background: var(--gold);
     border-radius: 50%;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 99999;
     transition: transform 0.15s ease, opacity 0.2s;
     mix-blend-mode: difference;
   }
@@ -45,7 +51,7 @@
     border: 1px solid var(--gold);
     border-radius: 50%;
     pointer-events: none;
-    z-index: 9998;
+    z-index: 99998;
     transition: transform 0.4s cubic-bezier(0.23,1,0.32,1), opacity 0.3s;
     opacity: 0.5;
   }
@@ -234,7 +240,6 @@
     border-color: rgba(201,168,76,0.5);
     box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.1);
   }
-  /* Only lift when not playing */
   .card:not(.is-playing):hover { transform: translateY(-4px); }
 
   .card:nth-child(1) { transition-delay: 0.05s; }
@@ -242,7 +247,6 @@
   .card:nth-child(3) { transition-delay: 0.25s; }
   .card:nth-child(4) { transition-delay: 0.35s; }
 
-  /* ── Thumbnail container ── */
   .card-thumb {
     position: relative;
     width: 100%;
@@ -251,18 +255,13 @@
     background: #0d0d0a;
     cursor: pointer;
   }
-
-  /* Poster image */
   .card-thumb img {
     width: 100%; height: 100%;
     object-fit: cover;
     display: block;
     transition: transform 0.5s ease, opacity 0.35s ease;
   }
-  /* Subtle zoom on hover (non-playing) */
   .card-thumb:not(.playing):hover img { transform: scale(1.05); }
-
-  /* Embedded YouTube iframe — hidden until .playing */
   .card-thumb iframe {
     position: absolute;
     inset: 0;
@@ -284,8 +283,6 @@
     z-index: 1;
     transition: opacity 0.3s;
   }
-
-  /* Play button */
   .play-btn {
     position: absolute;
     inset: 0;
@@ -308,8 +305,6 @@
     backdrop-filter: blur(4px);
   }
   .play-circle svg { width: 18px; height: 18px; fill: var(--cream); margin-left: 3px; }
-
-  /* Close / stop button — only visible while playing */
   .stop-btn {
     position: absolute;
     top: 0.6rem; left: 0.6rem;
@@ -330,7 +325,6 @@
   }
   .stop-btn:hover { background: rgba(181,69,27,0.85); }
   .card-thumb.playing .stop-btn { display: flex; }
-
   .card-badge {
     position: absolute;
     top: 0.75rem; right: 0.75rem;
@@ -347,13 +341,9 @@
     transition: opacity 0.3s;
   }
   .card-thumb.playing .card-badge { opacity: 0; }
-
-  /* Small loading bar for 30s preview */
   .preview-loading {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: 0; right: 0; bottom: 0;
     height: 3px;
     z-index: 11;
     background: rgba(10,10,10,0.4);
@@ -369,7 +359,6 @@
     box-shadow: 0 0 8px rgba(201,168,76,0.65);
   }
 
-  /* ── Card body ── */
   .card-body { padding: 1.25rem 1.5rem 1.5rem; }
   .card-title {
     font-family: 'Playfair Display', serif;
@@ -423,6 +412,504 @@
   .btn-rust:hover { background: var(--rust); color: var(--cream); border-color: var(--rust); }
   .btn svg { width: 10px; height: 10px; fill: currentColor; }
 
+  /* ========== REVIEWS SECTION ========== */
+  .reviews-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem 8rem;
+  }
+
+  .reviews-section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    margin-bottom: 5rem;
+    padding-top: 2rem;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reviews-section-header.visible { opacity: 1; transform: none; }
+
+  /* Tab nav for selecting title */
+  .review-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease 0.1s, transform 0.6s ease 0.1s;
+  }
+  .review-tabs.visible { opacity: 1; transform: none; }
+
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid rgba(201,168,76,0.15);
+    padding: 0.45rem 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--cream); border-color: rgba(201,168,76,0.4); }
+  .tab-btn.active {
+    color: var(--gold);
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.07);
+  }
+
+  /* Review panel (one per title) */
+  .review-panel { display: none; }
+  .review-panel.active { display: block; }
+
+  /* Star rating input */
+  .star-rating {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+  }
+  .star-rating input { display: none; }
+  .star-rating label {
+    font-size: 1.4rem;
+    color: var(--star-inactive);
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.15s ease;
+    line-height: 1;
+  }
+  .star-rating label:hover,
+  .star-rating label:hover ~ label { color: var(--star-active); }
+  .star-rating input:checked ~ label { color: var(--star-inactive); }
+  .star-rating input:checked + label,
+  .star-rating input:checked + label ~ label { color: var(--star-inactive); }
+
+  /* Fix star hover direction (RTL trick) */
+  .star-rating {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+  }
+  .star-rating label:hover,
+  .star-rating label:hover ~ label { color: var(--star-active); }
+  .star-rating input:checked ~ label { color: var(--star-active); }
+  .star-rating input:checked + label { color: var(--star-active); }
+
+  /* Review form */
+  .review-form-wrap {
+    background: var(--review-bg);
+    border: 1px solid var(--review-border);
+    padding: 2rem;
+    margin-bottom: 3rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease 0.2s, transform 0.6s ease 0.2s;
+  }
+  .review-form-wrap.visible { opacity: 1; transform: none; }
+
+  .form-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .form-row { margin-bottom: 1.2rem; }
+  .form-input, .form-textarea {
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(201,168,76,0.18);
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+    resize: vertical;
+  }
+  .form-input:focus, .form-textarea:focus {
+    border-color: rgba(201,168,76,0.55);
+  }
+  .form-input::placeholder, .form-textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+  }
+  .form-textarea { min-height: 100px; }
+
+  .form-submit {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--gold);
+    border: none;
+    padding: 0.75rem 1.8rem;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .form-submit:hover { background: #dbb84f; transform: translateY(-1px); }
+  .form-submit:active { transform: none; }
+
+  .form-admin-toggle {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    margin-left: 0.75rem;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .form-admin-toggle:hover { color: var(--cream); border-color: rgba(255,255,255,0.2); }
+  .form-admin-toggle.active {
+    color: var(--rust);
+    border-color: rgba(181,69,27,0.5);
+    background: rgba(181,69,27,0.07);
+  }
+
+  .admin-badge-indicator {
+    display: inline-block;
+    font-size: 0.58rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--rust);
+    border: 1px solid rgba(181,69,27,0.5);
+    padding: 0.2rem 0.5rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .admin-mode .admin-badge-indicator { opacity: 1; }
+
+  /* Review list */
+  .reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .review-item {
+    border: 1px solid var(--review-border);
+    border-bottom: none;
+    background: var(--review-bg);
+    padding: 1.75rem 2rem;
+    position: relative;
+    animation: reviewSlideIn 0.4s ease forwards;
+  }
+  .review-item:last-child { border-bottom: 1px solid var(--review-border); }
+  .review-item:first-child { border-top: 1px solid var(--review-border); }
+
+  @keyframes reviewSlideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .review-meta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .review-author-wrap { display: flex; align-items: center; gap: 0.75rem; }
+  .review-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--gold);
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .review-avatar.admin-av {
+    background: rgba(181,69,27,0.15);
+    border-color: rgba(181,69,27,0.4);
+    color: #e06040;
+  }
+  .review-author {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1;
+  }
+  .review-date {
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+  }
+  .review-admin-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #e06040;
+    border: 1px solid rgba(181,69,27,0.4);
+    padding: 0.15rem 0.4rem;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+  }
+
+  .review-stars {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+  .review-stars span {
+    font-size: 0.9rem;
+    color: var(--star-inactive);
+  }
+  .review-stars span.lit { color: var(--star-active); }
+
+  .review-body {
+    font-size: 0.85rem;
+    line-height: 1.75;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 1rem;
+  }
+  .review-body strong { color: var(--cream); font-style: normal; }
+
+  .review-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .review-like-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .review-like-btn:hover { color: var(--gold); border-color: rgba(201,168,76,0.3); }
+  .review-like-btn.liked { color: var(--gold); border-color: rgba(201,168,76,0.4); background: rgba(201,168,76,0.05); }
+  .review-like-btn svg { width: 10px; height: 10px; fill: currentColor; }
+
+  .admin-reply-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #e06040;
+    background: none;
+    border: 1px solid rgba(181,69,27,0.3);
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    display: none;
+  }
+  .admin-mode ~ * .admin-reply-btn,
+  .admin-mode .admin-reply-btn { display: inline-block; }
+  body.admin-mode .admin-reply-btn { display: inline-block; }
+  .admin-reply-btn:hover { background: rgba(181,69,27,0.1); color: #ef7050; }
+
+  .review-delete-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.35rem 0.5rem;
+    transition: color 0.2s;
+    display: none;
+  }
+  body.admin-mode .review-delete-btn { display: inline-block; }
+  .review-delete-btn:hover { color: #e05050; }
+
+  /* Inline reply form */
+  .inline-reply-form {
+    display: none;
+    margin-top: 1rem;
+    padding: 1.2rem;
+    background: rgba(181,69,27,0.05);
+    border: 1px solid rgba(181,69,27,0.2);
+  }
+  .inline-reply-form.open { display: block; }
+  .inline-reply-form textarea {
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(201,168,76,0.18);
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    padding: 0.65rem 0.9rem;
+    outline: none;
+    resize: vertical;
+    min-height: 70px;
+    transition: border-color 0.2s;
+    margin-bottom: 0.75rem;
+  }
+  .inline-reply-form textarea:focus { border-color: rgba(181,69,27,0.5); }
+  .reply-submit-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #e06040;
+    background: rgba(181,69,27,0.1);
+    border: 1px solid rgba(181,69,27,0.4);
+    padding: 0.45rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-right: 0.5rem;
+  }
+  .reply-submit-btn:hover { background: rgba(181,69,27,0.22); }
+  .reply-cancel-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .reply-cancel-btn:hover { color: var(--cream); }
+
+  /* Admin reply display */
+  .admin-reply {
+    margin-top: 1rem;
+    padding: 1rem 1.2rem;
+    border-left: 2px solid rgba(181,69,27,0.5);
+    background: rgba(181,69,27,0.04);
+  }
+  .admin-reply-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #e06040;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .admin-reply-label::before {
+    content: '';
+    display: inline-block;
+    width: 14px; height: 1px;
+    background: rgba(181,69,27,0.6);
+  }
+  .admin-reply-text {
+    font-size: 0.82rem;
+    font-style: italic;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  /* Empty state */
+  .reviews-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    border: 1px dashed rgba(201,168,76,0.15);
+  }
+  .reviews-empty p {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+  }
+  .reviews-empty small {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(122,112,96,0.5);
+    margin-top: 0.5rem;
+  }
+
+  /* Review count badge */
+  .review-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    background: rgba(201,168,76,0.12);
+    color: var(--gold-dim);
+    border-radius: 50%;
+    width: 20px; height: 20px;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+    transition: background 0.2s, color 0.2s;
+  }
+  .tab-btn.active .review-count-badge {
+    background: rgba(201,168,76,0.2);
+    color: var(--gold);
+  }
+
+  /* Admin mode global toggle */
+  .admin-mode-bar {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .admin-mode-pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: rgba(10,10,10,0.9);
+    border: 1px solid rgba(181,69,27,0.4);
+    color: var(--text-muted);
+    padding: 0.6rem 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .admin-mode-pill::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(181,69,27,0.5);
+    transition: background 0.2s;
+  }
+  .admin-mode-pill:hover { color: var(--cream); border-color: rgba(181,69,27,0.7); }
+  body.admin-mode .admin-mode-pill {
+    color: #e06040;
+    border-color: rgba(181,69,27,0.7);
+    background: rgba(181,69,27,0.08);
+  }
+  body.admin-mode .admin-mode-pill::before { background: #e06040; }
+
   /* ========== FOOTER ========== */
   footer {
     border-top: 1px solid var(--border);
@@ -464,7 +951,6 @@
     opacity: 1;
     pointer-events: all;
   }
-
   .modal-inner {
     position: relative;
     width: 100%;
@@ -475,7 +961,6 @@
   .modal-overlay.open .modal-inner {
     transform: scale(1) translateY(0);
   }
-
   .modal-header {
     display: flex;
     align-items: flex-end;
@@ -512,11 +997,7 @@
     justify-content: center;
     transition: background 0.2s, border-color 0.2s;
   }
-  .modal-close:hover {
-    background: var(--rust);
-    border-color: var(--rust);
-  }
-
+  .modal-close:hover { background: var(--rust); border-color: var(--rust); }
   .modal-video {
     position: relative;
     width: 100%;
@@ -532,7 +1013,6 @@
     height: 100%;
     border: none;
   }
-
   .modal-footer {
     display: flex;
     align-items: center;
@@ -572,6 +1052,8 @@
   @media (max-width: 600px) {
     .cards-grid { grid-template-columns: 1fr; }
     .section-number { font-size: 3rem; }
+    .review-tabs { gap: 0.35rem; }
+    .tab-btn { font-size: 0.56rem; padding: 0.38rem 0.65rem; }
   }
 </style>
 </head>
@@ -590,7 +1072,7 @@
     <span class="line2">Carefully & Deliberately Assembled</span>
   </h1>
   <p class="hero-desc">
-    No algorithm. No Netflix trending. Just <strong>nine things</strong> that will quietly rearrange the furniture in your brain and leave without cleaning up. You're welcome 😌🙏🏻.
+    No algorithm. No Netflix trending. Just <strong>nine things</strong> that will quietly rearrange the furniture in your brain and leave without cleaning up. You're welcome.
     <br><br>
     <strong>N.B.</strong> — "The movies gonna serve you a lot better than the shows" 🌚
   </p>
@@ -887,11 +1369,51 @@
   </div>
 </div>
 
+<hr class="section-rule">
+
+<!-- SECTION 3: REVIEWS -->
+<div class="reviews-wrap">
+  <div class="reviews-section-header" data-reveal>
+    <div class="section-number">03</div>
+    <div class="section-meta">
+      <p class="section-tag">Dispatch from the Wreckage</p>
+      <h2 class="section-title">Reader <em style="font-style:italic;color:var(--gold)">Testimonies</em></h2>
+      <p class="section-subtitle">
+        You watched them. You survived (maybe). Now leave a note for whoever comes next. Pick a title, rate it, say what it did to you.<br>
+        <span style="color:rgba(201,168,76,0.45);font-size:0.75rem;">Reviews persist in your browser. Admin mode lets the curator respond.</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Title tabs -->
+  <div class="review-tabs" data-reveal id="reviewTabs">
+    <button class="tab-btn active" data-title="severance">Severance <span class="review-count-badge" id="cnt-severance">0</span></button>
+    <button class="tab-btn" data-title="mindhunter">Mindhunter <span class="review-count-badge" id="cnt-mindhunter">0</span></button>
+    <button class="tab-btn" data-title="leftovers">The Leftovers <span class="review-count-badge" id="cnt-leftovers">0</span></button>
+    <button class="tab-btn" data-title="truedetective">True Detective S1 <span class="review-count-badge" id="cnt-truedetective">0</span></button>
+    <button class="tab-btn" data-title="nightcrawler">Nightcrawler <span class="review-count-badge" id="cnt-nightcrawler">0</span></button>
+    <button class="tab-btn" data-title="prisoners">Prisoners <span class="review-count-badge" id="cnt-prisoners">0</span></button>
+    <button class="tab-btn" data-title="enemy">Enemy <span class="review-count-badge" id="cnt-enemy">0</span></button>
+    <button class="tab-btn" data-title="nocountry">No Country for Old Men <span class="review-count-badge" id="cnt-nocountry">0</span></button>
+    <button class="tab-btn" data-title="oldboy">Oldboy <span class="review-count-badge" id="cnt-oldboy">0</span></button>
+  </div>
+
+  <!-- Review panels: one per title -->
+  <div id="reviewPanels">
+    <!-- Panels generated by JS -->
+  </div>
+</div>
+
 <!-- FOOTER -->
 <footer>
   <p class="footer-quote">"Hope you like em 😌🙏🏻"</p>
   <p class="footer-sub">Curated with care · Dissociation guaranteed · No refunds</p>
 </footer>
+
+<!-- Admin mode floating toggle -->
+<div class="admin-mode-bar">
+  <button class="admin-mode-pill" id="adminModePill" title="Toggle admin mode to respond to reviews">Admin Mode</button>
+</div>
 
 <!-- MODAL LIGHTBOX -->
 <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-label="Trailer player">
@@ -911,240 +1433,895 @@
 </div>
 
 <script>
-  /* ── Custom cursor ── */
-  const cursor = document.getElementById('cursor');
-  const ring   = document.getElementById('cursorRing');
-  let mx = -100, my = -100, rx = -100, ry = -100;
+/* ══════════════════════════════════════════════════════
+   THE WATCHLIST — FRONTEND ↔ BACKEND INTEGRATION
+   API base: http://localhost:3001
+   Auth: JWT stored in localStorage
+   
+   Features wired up:
+   • Register / Login / Logout
+   • Load reviews from API (per title tab)
+   • Post review (auth required, 1 per user per title)
+   • Like / Unlike review (auth required)
+   • Admin reply / delete (admin JWT required)
+   • Review counts live from API
+══════════════════════════════════════════════════════ */
 
-  document.addEventListener('mousemove', e => {
-    mx = e.clientX; my = e.clientY;
-    cursor.style.transform = `translate(${mx - 6}px, ${my - 6}px)`;
+const API = 'http://localhost:3001/api';
+
+/* ── Token helpers ── */
+const getToken   = () => localStorage.getItem('wl_token');
+const setToken   = (t) => localStorage.setItem('wl_token', t);
+const clearToken = () => localStorage.removeItem('wl_token');
+
+let currentUser = null; // populated after login / on load
+
+function authHeaders() {
+  const t = getToken();
+  return t ? { 'Authorization': `Bearer ${t}`, 'Content-Type': 'application/json' }
+           : { 'Content-Type': 'application/json' };
+}
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    headers: authHeaders(),
+    ...opts,
   });
-  (function animateRing() {
-    rx += (mx - rx) * 0.12;
-    ry += (my - ry) * 0.12;
-    ring.style.transform = `translate(${rx - 18}px, ${ry - 18}px)`;
-    requestAnimationFrame(animateRing);
-  })();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'API error');
+  return data;
+}
 
-  document.querySelectorAll('a, button').forEach(el => {
-    el.addEventListener('mouseenter', () => { cursor.style.transform += ' scale(2)'; ring.style.opacity = '0.2'; });
-    el.addEventListener('mouseleave', () => { cursor.style.transform = cursor.style.transform.replace(' scale(2)', ''); ring.style.opacity = '0.5'; });
+/* ── Load current user from token ── */
+async function loadCurrentUser() {
+  if (!getToken()) return;
+  try {
+    const d = await apiFetch('/auth/me');
+    currentUser = d.user;
+  } catch {
+    clearToken();
+    currentUser = null;
+  }
+  renderAuthBar();
+}
+
+/* ══════════════════════════════════════════════════════
+   AUTH BAR — floats bottom-left, shows login/register/logout
+══════════════════════════════════════════════════════ */
+function injectAuthBar() {
+  const bar = document.createElement('div');
+  bar.id = 'authBar';
+  bar.style.cssText = `
+    position:fixed;bottom:1.5rem;left:1.5rem;z-index:1000;
+    display:flex;flex-direction:column;align-items:flex-start;gap:0.5rem;
+  `;
+  bar.innerHTML = `
+    <div id="authStatus" style="
+      font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.18em;
+      text-transform:uppercase;color:var(--text-muted);
+      background:rgba(10,10,10,0.9);border:1px solid rgba(201,168,76,0.2);
+      padding:0.4rem 0.8rem;backdrop-filter:blur(8px);min-width:0;
+    "></div>
+    <div style="display:flex;gap:0.4rem;" id="authBtns"></div>
+  `;
+  document.body.appendChild(bar);
+}
+
+function renderAuthBar() {
+  const status = document.getElementById('authStatus');
+  const btns   = document.getElementById('authBtns');
+  if (!status || !btns) return;
+  status.style.display = 'block';
+
+  const pill = (text, color, onclick) => {
+    const b = document.createElement('button');
+    b.textContent = text;
+    b.style.cssText = `
+      font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.18em;
+      text-transform:uppercase;cursor:pointer;
+      background:rgba(10,10,10,0.9);border:1px solid ${color};
+      color:${color};padding:0.4rem 0.8rem;backdrop-filter:blur(8px);
+      transition:all 0.2s;
+    `;
+    b.addEventListener('click', onclick);
+    return b;
+  };
+
+  btns.innerHTML = '';
+
+  if (currentUser) {
+    const role = currentUser.role === 'admin' ? ' · Curator' : '';
+    status.textContent = `${currentUser.username}${role}`;
+    const logoutBtn = pill('Logout', 'rgba(201,168,76,0.5)', doLogout);
+    btns.appendChild(logoutBtn);
+
+    // Sync admin mode pill state
+    const isAdmin = currentUser.role === 'admin';
+    document.body.classList.toggle('admin-mode', isAdmin);
+    const adminPill = document.getElementById('adminModePill');
+    if (adminPill) adminPill.textContent = isAdmin ? '✓ Curator Mode' : 'Admin Mode';
+    isAdminMode = isAdmin;
+    document.querySelectorAll('.admin-reply-btn, .review-delete-btn').forEach(el => {
+      el.style.display = isAdmin ? 'inline-block' : 'none';
+    });
+    } else {
+    status.style.display = 'none'; // Hide the empty/muted status box when logged out
+    const loginBtn    = pill('Login', 'rgba(201,168,76,0.5)', () => openAuthModal('login'));
+    const registerBtn = pill('Register', 'rgba(181,69,27,0.5)', () => openAuthModal('register'));
+    btns.appendChild(loginBtn);
+    btns.appendChild(registerBtn);
+  }
+}
+
+function doLogout() {
+  clearToken();
+  currentUser = null;
+  isAdminMode = false;
+  document.body.classList.remove('admin-mode');
+  const adminPill = document.getElementById('adminModePill');
+  if (adminPill) adminPill.textContent = 'Admin Mode';
+  renderAuthBar();
+  document.dispatchEvent(new Event('authStateChanged'));
+  // Re-render current tab so like/reply buttons update
+  const activeTab = document.querySelector('.tab-btn.active');
+  if (activeTab) reloadPanel(activeTab.dataset.title);
+}
+
+/* ══════════════════════════════════════════════════════
+   AUTH MODAL (Login + Register)
+══════════════════════════════════════════════════════ */
+function injectAuthModal() {
+  const m = document.createElement('div');
+  m.id = 'authModal';
+  m.style.cssText = `
+    position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;
+    background:rgba(5,4,2,0.92);backdrop-filter:blur(8px);opacity:0;pointer-events:none;
+    transition:opacity 0.3s ease;padding:2rem;
+  `;
+  m.innerHTML = `
+    <div id="authModalInner" style="
+      width:100%;max-width:420px;background:#0a0a07;border:1px solid rgba(201,168,76,0.25);
+      padding:2.5rem;position:relative;transform:scale(0.94) translateY(20px);
+      transition:transform 0.35s cubic-bezier(0.22,1,0.36,1);
+    ">
+      <button id="authModalClose" style="
+        position:absolute;top:1rem;right:1rem;background:none;border:none;
+        color:var(--text-muted);font-size:1.1rem;cursor:pointer;line-height:1;
+      ">✕</button>
+      <h3 id="authModalTitle" style="
+        font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--cream);
+        margin-bottom:0.3rem;
+      "></h3>
+      <p id="authModalSub" style="font-size:0.72rem;color:var(--text-muted);margin-bottom:1.8rem;letter-spacing:0.05em;"></p>
+
+      <div id="authRegisterOnly" style="display:none;">
+        <label style="font-size:0.6rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold-dim);display:block;margin-bottom:0.4rem;">Username</label>
+        <input id="authUsername" type="text" maxlength="30" placeholder="e.g. cinephile_99" style="
+          width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(201,168,76,0.18);
+          color:var(--cream);font-family:'DM Mono',monospace;font-size:0.82rem;
+          padding:0.7rem 0.9rem;outline:none;margin-bottom:1rem;
+        ">
+      </div>
+
+      <label style="font-size:0.6rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold-dim);display:block;margin-bottom:0.4rem;">Email</label>
+      <input id="authEmail" type="email" placeholder="your@email.com" style="
+        width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(201,168,76,0.18);
+        color:var(--cream);font-family:'DM Mono',monospace;font-size:0.82rem;
+        padding:0.7rem 0.9rem;outline:none;margin-bottom:1rem;
+      ">
+
+      <label style="font-size:0.6rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold-dim);display:block;margin-bottom:0.4rem;">Password</label>
+      <input id="authPassword" type="password" placeholder="••••••••" style="
+        width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(201,168,76,0.18);
+        color:var(--cream);font-family:'DM Mono',monospace;font-size:0.82rem;
+        padding:0.7rem 0.9rem;outline:none;margin-bottom:1.5rem;
+      ">
+
+      <button id="authSubmitBtn" style="
+        width:100%;background:var(--gold);color:var(--ink);border:none;
+        font-family:'DM Mono',monospace;font-size:0.68rem;letter-spacing:0.2em;
+        text-transform:uppercase;padding:0.8rem;cursor:pointer;
+        transition:background 0.2s;margin-bottom:1rem;
+      "></button>
+
+      <p id="authError" style="font-size:0.72rem;color:#e06040;display:none;text-align:center;"></p>
+
+      <p style="font-size:0.68rem;color:var(--text-muted);text-align:center;margin-top:0.5rem;">
+        <span id="authSwitchText"></span>
+        <button id="authSwitchBtn" style="
+          background:none;border:none;color:var(--gold-dim);cursor:pointer;
+          font-size:0.68rem;letter-spacing:0.05em;text-decoration:underline;margin-left:0.3rem;
+        "></button>
+      </p>
+    </div>
+  `;
+  document.body.appendChild(m);
+
+  document.getElementById('authModalClose').addEventListener('click', closeAuthModal);
+  m.addEventListener('click', e => { if (!document.getElementById('authModalInner').contains(e.target)) closeAuthModal(); });
+  document.getElementById('authSwitchBtn').addEventListener('click', () => {
+    openAuthModal(currentAuthMode === 'login' ? 'register' : 'login');
   });
+  document.getElementById('authSubmitBtn').addEventListener('click', submitAuth);
+  document.getElementById('authEmail').addEventListener('keydown', e => { if (e.key === 'Enter') submitAuth(); });
+  document.getElementById('authPassword').addEventListener('keydown', e => { if (e.key === 'Enter') submitAuth(); });
+  attachCursorHover(document.getElementById('authModal'));
+}
 
-  /* ── Intersection Observer (reveal animations) ── */
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-  document.querySelectorAll('[data-reveal]').forEach(el => observer.observe(el));
+let currentAuthMode = 'login';
 
-  /* ── Inline card embed (clicking the thumbnail) ── */
-  let currentlyPlaying = null;
-  const PREVIEW_DURATION_MS = 30000;
-  const previewTimers = new WeakMap();
+function openAuthModal(mode) {
+  currentAuthMode = mode;
+  const m = document.getElementById('authModal');
+  const inner = document.getElementById('authModalInner');
+  const title = document.getElementById('authModalTitle');
+  const sub   = document.getElementById('authModalSub');
+  const submitBtn = document.getElementById('authSubmitBtn');
+  const switchText = document.getElementById('authSwitchText');
+  const switchBtn = document.getElementById('authSwitchBtn');
+  const regOnly = document.getElementById('authRegisterOnly');
+  const errEl = document.getElementById('authError');
 
-  function buildEmbedUrl(vid, { preview = false, start = 0 } = {}) {
-    // youtube.com embed is more reliable than youtube-nocookie for local file previews.
-    const base = `https://www.youtube.com/embed/${vid}`;
-    const params = new URLSearchParams({
-      autoplay: '1',
-      mute: '1',
-      playsinline: '1',
-      rel: '0',
-      modestbranding: '1'
+  errEl.style.display = 'none';
+
+  if (mode === 'login') {
+    title.textContent = 'Welcome Back';
+    sub.textContent   = 'Sign in to post reviews and like testimonies.';
+    submitBtn.textContent = 'Sign In';
+    switchText.textContent = "Don't have an account?";
+    switchBtn.textContent = 'Register';
+    regOnly.style.display = 'none';
+  } else {
+    title.textContent = 'Join The Watchlist';
+    sub.textContent   = 'Create an account to leave your testimony.';
+    submitBtn.textContent = 'Create Account';
+    switchText.textContent = 'Already have an account?';
+    switchBtn.textContent = 'Sign in';
+    regOnly.style.display = 'block';
+  }
+
+  m.style.opacity = '1';
+  m.style.pointerEvents = 'all';
+  setTimeout(() => { inner.style.transform = 'scale(1) translateY(0)'; }, 10);
+  if (mode === 'login') document.getElementById('authEmail').focus();
+  else document.getElementById('authUsername').focus();
+}
+
+function closeAuthModal() {
+  const m = document.getElementById('authModal');
+  const inner = document.getElementById('authModalInner');
+  m.style.opacity = '0';
+  m.style.pointerEvents = 'none';
+  inner.style.transform = 'scale(0.94) translateY(20px)';
+}
+
+async function submitAuth() {
+  const errEl = document.getElementById('authError');
+  errEl.style.display = 'none';
+
+  const email    = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const username = document.getElementById('authUsername').value.trim();
+
+  if (!email || !password) { showAuthError('Email and password are required.'); return; }
+  if (currentAuthMode === 'register' && !username) { showAuthError('Username is required.'); return; }
+
+  const btn = document.getElementById('authSubmitBtn');
+  btn.textContent = 'Please wait…';
+  btn.disabled = true;
+
+  try {
+    let data;
+    if (currentAuthMode === 'login') {
+      data = await apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    } else {
+      data = await apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ username, email, password }) });
+    }
+    setToken(data.token);
+    currentUser = data.user;
+    closeAuthModal();
+    renderAuthBar();
+    document.dispatchEvent(new Event('authStateChanged'));
+    // Reload current panel
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (activeTab) reloadPanel(activeTab.dataset.title);
+  } catch (err) {
+    showAuthError(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = currentAuthMode === 'login' ? 'Sign In' : 'Create Account';
+  }
+}
+
+function showAuthError(msg) {
+  const errEl = document.getElementById('authError');
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+}
+
+/* ══════════════════════════════════════════════════════
+   CUSTOM CURSOR
+══════════════════════════════════════════════════════ */
+const cursor = document.getElementById('cursor');
+const ring   = document.getElementById('cursorRing');
+let mx = -100, my = -100, rx = -100, ry = -100;
+let isHovering = false;
+
+window.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+}, { capture: true });
+
+(function animateRing() {
+  rx += (mx - rx) * 0.28;
+  ry += (my - ry) * 0.28;
+  cursor.style.transform = `translate(${mx - 6}px, ${my - 6}px)`;
+  ring.style.transform   = `translate(${rx - 18}px, ${ry - 18}px)`;
+  requestAnimationFrame(animateRing);
+})();
+
+function attachCursorHover(root = document) {
+  root.querySelectorAll('a, button, input, textarea, label, [role="button"]').forEach(el => {
+    if (el._cursorBound) return;
+    el._cursorBound = true;
+    el.addEventListener('mouseenter', () => {
+      isHovering = true;
+      cursor.style.opacity = '0';
+      ring.style.opacity   = '0';
+      document.documentElement.style.cursor = 'pointer';
     });
-
-    if (preview) {
-      // Keep preview as "pure video" as YouTube allows.
-      params.set('controls', '0');
-      params.set('disablekb', '1');
-      params.set('iv_load_policy', '3');
-      params.set('fs', '0');
-      params.set('cc_load_policy', '0');
-    }
-    if (start && Number.isFinite(start) && start > 0) {
-      params.set('start', String(Math.floor(start)));
-    }
-
-    // YouTube can reject embeds with error 153 when there is no valid origin/referrer.
-    // Include origin when available (http/https), and avoid strict referrer suppression.
-    if (location.protocol.startsWith('http')) {
-      params.set('origin', location.origin);
-    }
-
-    return `${base}?${params.toString()}`;
-  }
-
-  function appendPreviewParams(url) {
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}controls=0&ui-start-screen-info=false&queue-enable=false`;
-  }
-
-  function resolveEmbedSrc(vid, directEmbed = '', options = {}) {
-    if (directEmbed) {
-      return options.preview ? appendPreviewParams(directEmbed) : directEmbed;
-    }
-    return buildEmbedUrl(vid, options);
-  }
-
-  function clearPreviewTimer(thumb) {
-    const timerId = previewTimers.get(thumb);
-    if (timerId) {
-      clearTimeout(timerId);
-      previewTimers.delete(thumb);
-    }
-  }
-
-  function startPreviewTimer(thumb) {
-    clearPreviewTimer(thumb);
-    const timerId = setTimeout(() => stopCardVideo(thumb), PREVIEW_DURATION_MS);
-    previewTimers.set(thumb, timerId);
-  }
-
-  function ensurePreviewLoadingBar(thumb) {
-    if (thumb.querySelector('.preview-loading')) return;
-    const bar = document.createElement('div');
-    bar.className = 'preview-loading';
-    bar.innerHTML = '<div class="preview-loading-fill"></div>';
-    thumb.appendChild(bar);
-  }
-
-  function resetPreviewLoadingBar(thumb) {
-    const fill = thumb.querySelector('.preview-loading-fill');
-    if (!fill) return;
-    fill.style.transition = 'none';
-    fill.style.width = '0%';
-    void fill.offsetWidth;
-  }
-
-  function animatePreviewLoadingBar(thumb) {
-    const fill = thumb.querySelector('.preview-loading-fill');
-    if (!fill) return;
-    fill.style.transition = 'none';
-    fill.style.width = '0%';
-    requestAnimationFrame(() => {
-      fill.style.transition = `width ${PREVIEW_DURATION_MS}ms linear`;
-      fill.style.width = '100%';
+    el.addEventListener('mouseleave', () => {
+      isHovering = false;
+      cursor.style.opacity = '1';
+      ring.style.opacity   = '0.5';
+      document.documentElement.style.cursor = 'none';
     });
+  });
+}
+attachCursorHover();
+
+/* ── Intersection Observer (reveal animations) ── */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('[data-reveal]').forEach(el => observer.observe(el));
+
+/* ── Inline card embed ── */
+let currentlyPlaying = null;
+const PREVIEW_DURATION_MS = 30000;
+const previewTimers = new WeakMap();
+
+function buildEmbedUrl(vid, { preview = false, start = 0 } = {}) {
+  const base = `https://www.youtube.com/embed/${vid}`;
+  const params = new URLSearchParams({ autoplay: '1', mute: '1', playsinline: '1', rel: '0', modestbranding: '1' });
+  if (preview) { params.set('controls', '0'); params.set('disablekb', '1'); params.set('iv_load_policy', '3'); params.set('fs', '0'); params.set('cc_load_policy', '0'); }
+  if (start && Number.isFinite(start) && start > 0) params.set('start', String(Math.floor(start)));
+  if (location.protocol.startsWith('http')) params.set('origin', location.origin);
+  return `${base}?${params.toString()}`;
+}
+
+function appendPreviewParams(url) {
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}controls=0&ui-start-screen-info=false&queue-enable=false`;
+}
+
+function resolveEmbedSrc(vid, directEmbed = '', options = {}) {
+  if (directEmbed) return options.preview ? appendPreviewParams(directEmbed) : directEmbed;
+  return buildEmbedUrl(vid, options);
+}
+
+function clearPreviewTimer(thumb) { const t = previewTimers.get(thumb); if (t) { clearTimeout(t); previewTimers.delete(thumb); } }
+function startPreviewTimer(thumb) { clearPreviewTimer(thumb); previewTimers.set(thumb, setTimeout(() => stopCardVideo(thumb), PREVIEW_DURATION_MS)); }
+
+function ensurePreviewLoadingBar(thumb) {
+  if (thumb.querySelector('.preview-loading')) return;
+  const bar = document.createElement('div');
+  bar.className = 'preview-loading';
+  bar.innerHTML = '<div class="preview-loading-fill"></div>';
+  thumb.appendChild(bar);
+}
+
+function resetPreviewLoadingBar(thumb) {
+  const fill = thumb.querySelector('.preview-loading-fill');
+  if (!fill) return;
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  void fill.offsetWidth;
+}
+
+function animatePreviewLoadingBar(thumb) {
+  const fill = thumb.querySelector('.preview-loading-fill');
+  if (!fill) return;
+  fill.style.transition = 'none'; fill.style.width = '0%';
+  requestAnimationFrame(() => { fill.style.transition = `width ${PREVIEW_DURATION_MS}ms linear`; fill.style.width = '100%'; });
+}
+
+function embedInCard(thumb, vid) {
+  if (currentlyPlaying && currentlyPlaying !== thumb) stopCardVideo(currentlyPlaying);
+  ensurePreviewLoadingBar(thumb);
+  if (!thumb.querySelector('iframe')) {
+    const iframe = document.createElement('iframe');
+    const start = Number.parseInt(thumb.dataset.previewStart || '0', 10) || 0;
+    iframe.src = resolveEmbedSrc(vid, thumb.dataset.embed || '', { preview: true, start });
+    iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+    iframe.referrerPolicy = 'origin-when-cross-origin';
+    iframe.allowFullscreen = true;
+    thumb.appendChild(iframe);
   }
+  thumb.classList.add('playing');
+  thumb.closest('.card').classList.add('is-playing');
+  currentlyPlaying = thumb;
+  startPreviewTimer(thumb);
+  animatePreviewLoadingBar(thumb);
+}
 
-  function setupThumbnailFallbacks() {
-    const fallbacks = ['hqdefault.jpg', 'mqdefault.jpg', 'sddefault.jpg', 'default.jpg'];
+function stopCardVideo(thumb) {
+  clearPreviewTimer(thumb);
+  resetPreviewLoadingBar(thumb);
+  const iframe = thumb.querySelector('iframe');
+  if (iframe) { iframe.src = ''; iframe.remove(); }
+  thumb.classList.remove('playing');
+  thumb.closest('.card').classList.remove('is-playing');
+  if (currentlyPlaying === thumb) currentlyPlaying = null;
+}
 
-    document.querySelectorAll('.card-thumb').forEach(thumb => {
-      const vid = thumb.dataset.previewVid || thumb.dataset.vid;
-      const img = thumb.querySelector('img');
-      if (!vid || !img) return;
+document.querySelectorAll('.card-thumb').forEach(thumb => {
+  ensurePreviewLoadingBar(thumb);
+  thumb.addEventListener('click', e => {
+    if (e.target.closest('.stop-btn') || e.target.closest('a')) return;
+    if (thumb.classList.contains('playing')) return;
+    embedInCard(thumb, thumb.dataset.previewVid || thumb.dataset.vid);
+  });
+});
 
-      let fallbackIndex = 0;
-      img.addEventListener('error', () => {
-        if (fallbackIndex >= fallbacks.length) return;
-        img.src = `https://i.ytimg.com/vi/${vid}/${fallbacks[fallbackIndex++]}`;
-      });
-    });
-  }
+document.querySelectorAll('.stop-btn').forEach(btn => {
+  btn.addEventListener('click', e => { e.stopPropagation(); stopCardVideo(btn.closest('.card-thumb')); });
+});
 
-  function embedInCard(thumb, vid) {
-    if (currentlyPlaying && currentlyPlaying !== thumb) stopCardVideo(currentlyPlaying);
-    ensurePreviewLoadingBar(thumb);
-    if (!thumb.querySelector('iframe')) {
-      const iframe = document.createElement('iframe');
-      const start = Number.parseInt(thumb.dataset.previewStart || '0', 50) || 0;
-      iframe.src = resolveEmbedSrc(vid, thumb.dataset.embed || '', { preview: true, start });
-      iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
-      iframe.referrerPolicy = 'origin-when-cross-origin';
-      iframe.allowFullscreen = true;
-      thumb.appendChild(iframe);
-    }
-    thumb.classList.add('playing');
-    thumb.closest('.card').classList.add('is-playing');
-    currentlyPlaying = thumb;
-    startPreviewTimer(thumb);
-    animatePreviewLoadingBar(thumb);
-  }
+/* ── Modal lightbox ── */
+const overlay    = document.getElementById('modalOverlay');
+const modalVideo = document.getElementById('modalVideo');
+const modalTitle = document.getElementById('modalTitle');
+const modalType  = document.getElementById('modalType');
+const modalClose = document.getElementById('modalClose');
 
-  function stopCardVideo(thumb) {
-    clearPreviewTimer(thumb);
-    resetPreviewLoadingBar(thumb);
-    const iframe = thumb.querySelector('iframe');
-    if (iframe) { iframe.src = ''; iframe.remove(); }
-    thumb.classList.remove('playing');
-    thumb.closest('.card').classList.remove('is-playing');
-    if (currentlyPlaying === thumb) currentlyPlaying = null;
-  }
+function openModal(vid, title, type, directEmbed = '', start = 0) {
+  if (currentlyPlaying) stopCardVideo(currentlyPlaying);
+  modalTitle.textContent = title;
+  modalType.textContent  = type;
+  modalVideo.innerHTML = `<iframe src="${resolveEmbedSrc(vid, directEmbed, { start })}" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="origin-when-cross-origin" allowfullscreen></iframe>`;
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
 
+function closeModal() {
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+  setTimeout(() => { modalVideo.innerHTML = ''; }, 380);
+}
+
+modalClose.addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if (!document.getElementById('modalInner').contains(e.target)) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal(); });
+
+document.querySelectorAll('.trailer-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const card = btn.closest('.card');
+    const vid  = btn.dataset.vid;
+    const directEmbed = btn.dataset.embed || card.querySelector('.card-thumb')?.dataset.embed || '';
+    const start = Number.parseInt(btn.dataset.start || '0', 10) || 0;
+    const title = card.querySelector('.card-title').textContent.trim();
+    const type  = card.querySelector('.card-type').textContent.trim();
+    openModal(vid, title, type, directEmbed, start);
+  });
+});
+
+/* ── Thumbnail fallbacks ── */
+(function setupThumbnailFallbacks() {
+  const fallbacks = ['hqdefault.jpg', 'mqdefault.jpg', 'sddefault.jpg', 'default.jpg'];
   document.querySelectorAll('.card-thumb').forEach(thumb => {
-    ensurePreviewLoadingBar(thumb);
-    thumb.addEventListener('click', e => {
-      if (e.target.closest('.stop-btn') || e.target.closest('a')) return;
-      if (thumb.classList.contains('playing')) return;
-      embedInCard(thumb, thumb.dataset.previewVid || thumb.dataset.vid);
+    const vid = thumb.dataset.previewVid || thumb.dataset.vid;
+    const img = thumb.querySelector('img');
+    if (!vid || !img) return;
+    let idx = 0;
+    img.addEventListener('error', () => { if (idx < fallbacks.length) img.src = `https://i.ytimg.com/vi/${vid}/${fallbacks[idx++]}`; });
+  });
+})();
+
+/* ══════════════════════════════════════════════════════
+   REVIEWS SYSTEM — API-backed
+   Reads from:  GET /api/reviews/:slug
+   Posts to:    POST /api/reviews/:slug        (auth required)
+   Likes:       POST /api/reviews/:slug/:id/like (auth required)
+   Reply:       POST /api/reviews/:slug/:id/reply (admin)
+   Delete:      DELETE /api/reviews/:slug/:id    (auth, owner or admin)
+══════════════════════════════════════════════════════ */
+
+const TITLES = [
+  { slug: 'severance',    label: 'Severance' },
+  { slug: 'mindhunter',   label: 'Mindhunter' },
+  { slug: 'leftovers',    label: 'The Leftovers' },
+  { slug: 'truedetective',label: 'True Detective S1' },
+  { slug: 'nightcrawler', label: 'Nightcrawler' },
+  { slug: 'prisoners',    label: 'Prisoners' },
+  { slug: 'enemy',        label: 'Enemy' },
+  { slug: 'nocountry',    label: 'No Country for Old Men' },
+  { slug: 'oldboy',       label: 'Oldboy' },
+];
+
+let isAdminMode = false;
+
+/* Panel cache so we don't re-fetch on every tab switch */
+const panelCache = {};
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function initials(name) {
+  return String(name).trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function starsHtml(rating, interactive = false, prefix = '') {
+  if (interactive) {
+    let html = '<div class="star-rating" role="radiogroup" aria-label="Rating">';
+    for (let i = 5; i >= 1; i--) {
+      html += `<input type="radio" id="${prefix}star${i}" name="${prefix}rating" value="${i}">
+               <label for="${prefix}star${i}" title="${i} star${i>1?'s':''}">★</label>`;
+    }
+    html += '</div>';
+    return html;
+  }
+  let html = `<div class="review-stars" aria-label="${rating} out of 5 stars">`;
+  for (let i = 1; i <= 5; i++) html += `<span class="${i <= rating ? 'lit' : ''}">★</span>`;
+  html += '</div>';
+  return html;
+}
+
+function buildReviewItemHtml(r, slug) {
+  const isAdmin = r.author?.role === 'admin' || r.postedAsAdmin;
+  const authorName = r.author?.username || 'Anonymous';
+  const av = isAdmin
+    ? `<div class="review-avatar admin-av">${initials(authorName)}</div>`
+    : `<div class="review-avatar">${initials(authorName)}</div>`;
+  const adminLabel = isAdmin ? `<span class="review-admin-label">Curator</span>` : '';
+
+  const likeCount = r.likeCount || 0;
+  const likedByMe = !!r.didILike;
+
+  const isOwner = currentUser && r.author?._id === currentUser._id;
+  const canDelete = isAdminMode || isOwner;
+
+  const replyHtml = r.adminReply ? `
+    <div class="admin-reply">
+      <div>
+        <div class="admin-reply-label">Curator's note · ${formatDate(r.adminReply.createdAt || Date.now())}</div>
+        <div class="admin-reply-text">${escHtml(r.adminReply.body)}</div>
+      </div>
+    </div>` : '';
+
+  return `
+    <div class="review-item" data-id="${r._id}" data-slug="${slug}">
+      <div class="review-meta">
+        <div class="review-author-wrap">
+          ${av}
+          <div>
+            <div class="review-author">${escHtml(authorName)}${adminLabel}</div>
+            <div class="review-date">${formatDate(r.createdAt)}</div>
+          </div>
+        </div>
+        ${starsHtml(r.rating)}
+      </div>
+      <div class="review-body">${escHtml(r.body)}</div>
+      <div class="review-actions">
+        <button class="review-like-btn${likedByMe ? ' liked' : ''}" data-id="${r._id}" data-slug="${slug}" aria-label="Like review">
+          <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          ${likeCount > 0 ? likeCount : ''}
+        </button>
+        ${isAdminMode && !r.adminReply ? `<button class="admin-reply-btn" data-id="${r._id}" data-slug="${slug}">↩ Reply</button>` : ''}
+        ${canDelete ? `<button class="review-delete-btn" data-id="${r._id}" data-slug="${slug}" title="Delete review">× Delete</button>` : ''}
+      </div>
+      <div class="inline-reply-form" id="reply-form-${r._id}">
+        <textarea placeholder="Write a curator's response…" rows="3"></textarea>
+        <div>
+          <button class="reply-submit-btn" data-id="${r._id}" data-slug="${slug}">Post Response</button>
+          <button class="reply-cancel-btn" data-id="${r._id}">Cancel</button>
+        </div>
+      </div>
+      ${replyHtml}
+    </div>`;
+}
+
+function renderReviewsList(slug, reviews, container) {
+  if (!reviews || reviews.length === 0) {
+    container.innerHTML = `
+      <div class="reviews-empty">
+        <p>No testimonies yet. Be the first to report back.</p>
+        <small>Sign in and leave your mark.</small>
+      </div>`;
+    return;
+  }
+  container.innerHTML = reviews.map(r => buildReviewItemHtml(r, slug)).join('');
+  attachReviewListeners(container, slug);
+}
+
+function attachReviewListeners(container, slug) {
+  /* Like buttons */
+  container.querySelectorAll('.review-like-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!currentUser) { openAuthModal('login'); return; }
+      const id = btn.dataset.id;
+      try {
+        const d = await apiFetch(`/reviews/${slug}/${id}/like`, { method: 'POST' });
+        btn.classList.toggle('liked', d.liked);
+        btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${d.likeCount > 0 ? d.likeCount : ''}`;
+      } catch (err) {
+        if (err.message.includes('auth') || err.message.includes('log')) openAuthModal('login');
+      }
     });
   });
 
-  document.querySelectorAll('.stop-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      stopCardVideo(btn.closest('.card-thumb'));
-    });
-  });
-
-  /* ── Modal lightbox (Trailer button) ── */
-  const overlay    = document.getElementById('modalOverlay');
-  const modalVideo = document.getElementById('modalVideo');
-  const modalTitle = document.getElementById('modalTitle');
-  const modalType  = document.getElementById('modalType');
-  const modalClose = document.getElementById('modalClose');
-
-  function openModal(vid, title, type, directEmbed = '', start = 0) {
-    // Stop any inline card video first
-    if (currentlyPlaying) stopCardVideo(currentlyPlaying);
-
-    modalTitle.textContent = title;
-    modalType.textContent  = type;
-    modalVideo.innerHTML = `<iframe
-      src="${resolveEmbedSrc(vid, directEmbed, { start })}"
-      allow="autoplay; encrypted-media; picture-in-picture"
-      referrerpolicy="origin-when-cross-origin"
-      allowfullscreen></iframe>`;
-
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeModal() {
-    overlay.classList.remove('open');
-    document.body.style.overflow = '';
-    // Short delay so the fade-out plays before iframe is killed
-    setTimeout(() => { modalVideo.innerHTML = ''; }, 380);
-  }
-
-  modalClose.addEventListener('click', closeModal);
-
-  // Click on the dark backdrop (not the inner card) closes modal
-  overlay.addEventListener('click', e => {
-    if (!document.getElementById('modalInner').contains(e.target)) closeModal();
-  });
-
-  // Escape key
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
-  });
-
-  // Wire up all Trailer buttons
-  document.querySelectorAll('.trailer-btn').forEach(btn => {
+  /* Admin reply open */
+  container.querySelectorAll('.admin-reply-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const card  = btn.closest('.card');
-      const vid   = btn.dataset.vid;
-      const directEmbed = btn.dataset.embed || card.querySelector('.card-thumb')?.dataset.embed || '';
-      const start = Number.parseInt(btn.dataset.start || '0', 10) || 0;
-      const title = card.querySelector('.card-title').textContent.trim();
-      const type  = card.querySelector('.card-type').textContent.trim();
-      openModal(vid, title, type, directEmbed, start);
+      if (!isAdminMode) return;
+      const id = btn.dataset.id;
+      const form = document.getElementById(`reply-form-${id}`);
+      if (!form) return;
+      const open = form.classList.toggle('open');
+      if (open) form.querySelector('textarea').focus();
     });
   });
 
-  setupThumbnailFallbacks();
+  /* Reply submit */
+  container.querySelectorAll('.reply-submit-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id   = btn.dataset.id;
+      const sl   = btn.dataset.slug;
+      const form = document.getElementById(`reply-form-${id}`);
+      const body = form?.querySelector('textarea')?.value.trim();
+      if (!body) return;
+      btn.disabled = true;
+      try {
+        await apiFetch(`/reviews/${sl}/${id}/reply`, { method: 'POST', body: JSON.stringify({ body }) });
+        await reloadPanel(sl);
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  /* Reply cancel */
+  container.querySelectorAll('.reply-cancel-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const form = document.getElementById(`reply-form-${btn.dataset.id}`);
+      if (form) { form.classList.remove('open'); form.querySelector('textarea').value = ''; }
+    });
+  });
+
+  /* Delete */
+  container.querySelectorAll('.review-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!currentUser) return;
+      if (!confirm('Delete this review?')) return;
+      const id = btn.dataset.id;
+      const sl = btn.dataset.slug;
+      try {
+        await apiFetch(`/reviews/${sl}/${id}`, { method: 'DELETE' });
+        await reloadPanel(sl);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  });
+}
+
+function updateCount(slug, count) {
+  const el = document.getElementById(`cnt-${slug}`);
+  if (el) el.textContent = count;
+}
+
+/* ── Reload a panel from API ── */
+async function reloadPanel(slug) {
+  delete panelCache[slug]; // Bust cache
+  await loadPanel(slug);
+}
+
+async function loadPanel(slug) {
+  if (panelCache[slug]) {
+    const listContainer = document.getElementById(`list-${slug}`);
+    if (listContainer) {
+      renderReviewsList(slug, panelCache[slug], listContainer);
+    }
+    return;
+  }
+
+  const listContainer = document.getElementById(`list-${slug}`);
+  if (listContainer) listContainer.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:0.78rem;letter-spacing:0.15em;text-transform:uppercase;">Loading…</div>`;
+
+  try {
+    const d = await apiFetch(`/reviews/${slug}`);
+    panelCache[slug] = d.reviews;
+    updateCount(slug, d.count);
+    if (listContainer) renderReviewsList(slug, d.reviews, listContainer);
+  } catch (err) {
+    if (listContainer) listContainer.innerHTML = `
+      <div class="reviews-empty">
+        <p style="color:#e06040;">Could not load reviews</p>
+        <small>${escHtml(err.message)}</small>
+      </div>`;
+  }
+}
+
+/* ── Build panels ── */
+function starsHtmlInteractive(prefix) {
+  let html = '<div class="star-rating" role="radiogroup" aria-label="Rating">';
+  for (let i = 5; i >= 1; i--) {
+    html += `<input type="radio" id="${prefix}star${i}" name="${prefix}rating" value="${i}">
+             <label for="${prefix}star${i}" title="${i} star${i>1?'s':''}">★</label>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function buildPanel(slug, label) {
+  const prefix = `form_${slug}_`;
+  return `
+    <div class="review-panel" data-slug="${slug}" id="panel-${slug}">
+      <div class="review-form-wrap" data-reveal>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.5rem;">
+          <p style="font-family:'Playfair Display',serif;font-style:italic;font-size:1rem;color:var(--gold-dim);">Your take on <em>${label}</em></p>
+          <div id="authNote-${slug}" style="font-size:0.66rem;letter-spacing:0.12em;color:var(--text-muted);"></div>
+        </div>
+        <div id="reviewFormFields-${slug}">
+          <div class="form-row">
+            <label class="form-label">Your Rating</label>
+            ${starsHtmlInteractive(prefix)}
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="${prefix}body">What Did It Do To You?</label>
+            <textarea class="form-textarea" id="${prefix}body" placeholder="No spoilers. Or all the spoilers. I'm not your boss." maxlength="800" rows="4"></textarea>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <button class="form-submit" id="${prefix}submit">Post Review</button>
+            <span id="${prefix}loginHint" style="font-size:0.68rem;color:var(--text-muted);display:none;">
+              <button style="background:none;border:none;color:var(--gold-dim);cursor:pointer;font-size:0.68rem;text-decoration:underline;" class="open-login-btn">Sign in</button> to post
+            </span>
+          </div>
+          <p id="${prefix}error" style="font-size:0.72rem;color:#e06040;margin-top:0.75rem;display:none;"></p>
+          <p id="${prefix}success" style="font-size:0.72rem;color:#4caf50;margin-top:0.75rem;display:none;">Review posted! ✓</p>
+        </div>
+      </div>
+      <div class="reviews-list-container" id="list-${slug}"></div>
+    </div>`;
+}
+
+const panelsWrap = document.getElementById('reviewPanels');
+TITLES.forEach(({ slug, label }) => {
+  panelsWrap.insertAdjacentHTML('beforeend', buildPanel(slug, label));
+});
+
+/* Observe new form-wraps */
+document.querySelectorAll('.review-form-wrap').forEach(el => observer.observe(el));
+
+/* Wire up submit buttons */
+TITLES.forEach(({ slug }) => {
+  const prefix = `form_${slug}_`;
+  const submitBtn = document.getElementById(`${prefix}submit`);
+  const errorEl   = document.getElementById(`${prefix}error`);
+  const successEl = document.getElementById(`${prefix}success`);
+  const loginHint = document.getElementById(`${prefix}loginHint`);
+
+  // Show login hint if not authed
+  function updateFormState() {
+    if (!currentUser) {
+      if (loginHint) loginHint.style.display = 'inline';
+      if (submitBtn) submitBtn.style.display = 'none';
+    } else {
+      if (loginHint) loginHint.style.display = 'none';
+      if (submitBtn) submitBtn.style.display = 'inline-flex';
+    }
+  }
+
+  loginHint?.querySelectorAll('.open-login-btn').forEach(b => {
+    b.addEventListener('click', () => openAuthModal('login'));
+  });
+
+  updateFormState();
+  // Re-run when auth state changes (we call this manually after login)
+  document.addEventListener('authStateChanged', updateFormState);
+
+  if (submitBtn) {
+    submitBtn.addEventListener('click', async () => {
+      if (!currentUser) { openAuthModal('login'); return; }
+      errorEl.style.display = 'none';
+      successEl.style.display = 'none';
+
+      const body   = document.getElementById(`${prefix}body`).value.trim();
+      const ratingInput = document.querySelector(`input[name="${prefix}rating"]:checked`);
+      const rating = ratingInput ? parseInt(ratingInput.value) : 0;
+
+      if (!rating)  { errorEl.textContent = 'Give it at least one star.'; errorEl.style.display = 'block'; return; }
+      if (!body)    { errorEl.textContent = 'Say something. Anything.'; errorEl.style.display = 'block'; return; }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Posting…';
+
+      try {
+        await apiFetch(`/reviews/${slug}`, { method: 'POST', body: JSON.stringify({ rating, body }) });
+        document.getElementById(`${prefix}body`).value = '';
+        if (ratingInput) ratingInput.checked = false;
+        successEl.style.display = 'block';
+        await reloadPanel(slug);
+        const listContainer = document.getElementById(`list-${slug}`);
+        if (listContainer) listContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Post Review';
+      }
+    });
+  }
+});
+
+/* ── Tab switching ── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.review-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const slug = btn.dataset.title;
+    const panel = document.getElementById(`panel-${slug}`);
+    if (panel) { panel.classList.add('active'); loadPanel(slug); }
+  });
+});
+
+/* Activate first panel and load it */
+document.getElementById('panel-severance').classList.add('active');
+
+/* ── Admin mode toggle (kept for manual override) ── */
+const adminPill = document.getElementById('adminModePill');
+adminPill.addEventListener('click', () => {
+  if (!currentUser) { openAuthModal('login'); return; }
+  if (currentUser.role !== 'admin') {
+    alert('Admin access requires an admin account.');
+    return;
+  }
+  isAdminMode = !isAdminMode;
+  document.body.classList.toggle('admin-mode', isAdminMode);
+  adminPill.textContent = isAdminMode ? '✓ Curator Mode' : 'Admin Mode';
+  document.querySelectorAll('.admin-reply-btn, .review-delete-btn').forEach(el => {
+    el.style.display = isAdminMode ? 'inline-block' : 'none';
+  });
+  // Re-render active panel so reply buttons appear/disappear
+  const activeTab = document.querySelector('.tab-btn.active');
+  if (activeTab) reloadPanel(activeTab.dataset.title);
+});
+
+/* ── Bootstrap ── */
+injectAuthBar();
+injectAuthModal();
+
+(async function init() {
+  await loadCurrentUser();
+  // Now load all counts and the first panel
+  await Promise.all(TITLES.map(({ slug }) =>
+    apiFetch(`/reviews/${slug}`).then(d => updateCount(slug, d.count)).catch(() => {})
+  ));
+  // Re-run form state for all panels now that we know auth status
+  document.dispatchEvent(new Event('authStateChanged'));
+  loadPanel('severance');
+})();
 </script>
 </body>
 </html>
